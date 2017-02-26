@@ -654,6 +654,7 @@ nv50_ram_ctor(const struct nvkm_ram_func *func,
 	case 2: type = NVKM_RAM_TYPE_GDDR3; break;
 	case 3: type = NVKM_RAM_TYPE_GDDR4; break;
 	case 4: type = NVKM_RAM_TYPE_GDDR5; break;
+	// Handle NVKM_RAM_TYPE_GDDR5X ?
 	default:
 		break;
 	}

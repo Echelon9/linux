@@ -62,6 +62,7 @@ nvkm_ram_ctor(const struct nvkm_ram_func *func, struct nvkm_fb *fb,
 		[NVKM_RAM_TYPE_GDDR3  ] = "GDDR3",
 		[NVKM_RAM_TYPE_GDDR4  ] = "GDDR4",
 		[NVKM_RAM_TYPE_GDDR5  ] = "GDDR5",
+		[NVKM_RAM_TYPE_GDDR5X ] = "GDDR5X",
 	};
 	struct nvkm_subdev *subdev = &fb->subdev;
 	int ret;
