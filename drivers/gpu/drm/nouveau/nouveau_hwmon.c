@@ -639,22 +639,22 @@ static struct attribute *hwmon_power_attrs[] = {
 	NULL
 };
 
-static const struct attribute_group hwmon_default_attrgroup = {
+static const struct attribute_group hwmon_default_group = {
 	.attrs = hwmon_default_attrs,
 };
-static const struct attribute_group hwmon_temp_attrgroup = {
+static const struct attribute_group hwmon_temp_group = {
 	.attrs = hwmon_temp_attrs,
 };
-static const struct attribute_group hwmon_fan_rpm_attrgroup = {
+static const struct attribute_group hwmon_fan_rpm_group = {
 	.attrs = hwmon_fan_rpm_attrs,
 };
-static const struct attribute_group hwmon_pwm_fan_attrgroup = {
+static const struct attribute_group hwmon_pwm_fan_group = {
 	.attrs = hwmon_pwm_fan_attrs,
 };
-static const struct attribute_group hwmon_in0_attrgroup = {
+static const struct attribute_group hwmon_in0_group = {
 	.attrs = hwmon_in0_attrs,
 };
-static const struct attribute_group hwmon_power_attrgroup = {
+static const struct attribute_group hwmon_power_group = {
 	.attrs = hwmon_power_attrs,
 };
 #endif
@@ -685,14 +685,14 @@ nouveau_hwmon_init(struct drm_device *dev)
 	dev_set_drvdata(hwmon_dev, dev);
 
 	/* set the default attributes */
-	ret = sysfs_create_group(&hwmon_dev->kobj, &hwmon_default_attrgroup);
+	ret = sysfs_create_group(&hwmon_dev->kobj, &hwmon_default_group);
 	if (ret)
 		goto error;
 
 	if (therm && therm->attr_get && therm->attr_set) {
 		/* if the card has a working thermal sensor */
 		if (nvkm_therm_temp_get(therm) >= 0) {
-			ret = sysfs_create_group(&hwmon_dev->kobj, &hwmon_temp_attrgroup);
+			ret = sysfs_create_group(&hwmon_dev->kobj, &hwmon_temp_group);
 			if (ret)
 				goto error;
 		}
@@ -703,7 +703,7 @@ nouveau_hwmon_init(struct drm_device *dev)
 		 *     actual fan connected to it... therm table? */
 		if (therm->fan_get && therm->fan_get(therm) >= 0) {
 			ret = sysfs_create_group(&hwmon_dev->kobj,
-						 &hwmon_pwm_fan_attrgroup);
+						 &hwmon_pwm_fan_group);
 			if (ret)
 				goto error;
 		}
@@ -712,14 +712,14 @@ nouveau_hwmon_init(struct drm_device *dev)
 	/* if the card can read the fan rpm */
 	if (therm && nvkm_therm_fan_sense(therm) >= 0) {
 		ret = sysfs_create_group(&hwmon_dev->kobj,
-					 &hwmon_fan_rpm_attrgroup);
+					 &hwmon_fan_rpm_group);
 		if (ret)
 			goto error;
 	}
 
 	if (volt && nvkm_volt_get(volt) >= 0) {
 		ret = sysfs_create_group(&hwmon_dev->kobj,
-					 &hwmon_in0_attrgroup);
+					 &hwmon_in0_group);
 
 		if (ret)
 			goto error;
@@ -727,7 +727,7 @@ nouveau_hwmon_init(struct drm_device *dev)
 
 	if (iccsense && iccsense->data_valid && !list_empty(&iccsense->rails)) {
 		ret = sysfs_create_group(&hwmon_dev->kobj,
-					 &hwmon_power_attrgroup);
+					 &hwmon_power_group);
 		if (ret)
 			goto error;
 	}
@@ -753,12 +753,12 @@ nouveau_hwmon_fini(struct drm_device *dev)
 	struct nouveau_hwmon *hwmon = nouveau_hwmon(dev);
 
 	if (hwmon->hwmon) {
-		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_default_attrgroup);
-		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_temp_attrgroup);
-		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_pwm_fan_attrgroup);
-		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_fan_rpm_attrgroup);
-		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_in0_attrgroup);
-		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_power_attrgroup);
+		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_default_group);
+		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_temp_group);
+		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_pwm_fan_group);
+		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_fan_rpm_group);
+		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_in0_group);
+		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_power_group);
 
 		hwmon_device_unregister(hwmon->hwmon);
 	}
