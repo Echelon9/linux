@@ -596,12 +596,12 @@ nouveau_hwmon_get_power1_input(struct device *d, struct device_attribute *a,
 static SENSOR_DEVICE_ATTR(power1_input, S_IRUGO,
 			  nouveau_hwmon_get_power1_input, NULL, 0);
 
-static struct attribute *hwmon_default_attributes[] = {
+static struct attribute *hwmon_default_attrs[] = {
 	&sensor_dev_attr_name.dev_attr.attr,
 	&sensor_dev_attr_update_rate.dev_attr.attr,
 	NULL
 };
-static struct attribute *hwmon_temp_attributes[] = {
+static struct attribute *hwmon_temp_attrs[] = {
 	&sensor_dev_attr_temp1_input.dev_attr.attr,
 	&sensor_dev_attr_temp1_auto_point1_pwm.dev_attr.attr,
 	&sensor_dev_attr_temp1_auto_point1_temp.dev_attr.attr,
@@ -614,11 +614,11 @@ static struct attribute *hwmon_temp_attributes[] = {
 	&sensor_dev_attr_temp1_emergency_hyst.dev_attr.attr,
 	NULL
 };
-static struct attribute *hwmon_fan_rpm_attributes[] = {
+static struct attribute *hwmon_fan_rpm_attrs[] = {
 	&sensor_dev_attr_fan1_input.dev_attr.attr,
 	NULL
 };
-static struct attribute *hwmon_pwm_fan_attributes[] = {
+static struct attribute *hwmon_pwm_fan_attrs[] = {
 	&sensor_dev_attr_pwm1_enable.dev_attr.attr,
 	&sensor_dev_attr_pwm1.dev_attr.attr,
 	&sensor_dev_attr_pwm1_min.dev_attr.attr,
@@ -626,7 +626,7 @@ static struct attribute *hwmon_pwm_fan_attributes[] = {
 	NULL
 };
 
-static struct attribute *hwmon_in0_attributes[] = {
+static struct attribute *hwmon_in0_attrs[] = {
 	&sensor_dev_attr_in0_input.dev_attr.attr,
 	&sensor_dev_attr_in0_min.dev_attr.attr,
 	&sensor_dev_attr_in0_max.dev_attr.attr,
@@ -634,28 +634,28 @@ static struct attribute *hwmon_in0_attributes[] = {
 	NULL
 };
 
-static struct attribute *hwmon_power_attributes[] = {
+static struct attribute *hwmon_power_attrs[] = {
 	&sensor_dev_attr_power1_input.dev_attr.attr,
 	NULL
 };
 
 static const struct attribute_group hwmon_default_attrgroup = {
-	.attrs = hwmon_default_attributes,
+	.attrs = hwmon_default_attrs,
 };
 static const struct attribute_group hwmon_temp_attrgroup = {
-	.attrs = hwmon_temp_attributes,
+	.attrs = hwmon_temp_attrs,
 };
 static const struct attribute_group hwmon_fan_rpm_attrgroup = {
-	.attrs = hwmon_fan_rpm_attributes,
+	.attrs = hwmon_fan_rpm_attrs,
 };
 static const struct attribute_group hwmon_pwm_fan_attrgroup = {
-	.attrs = hwmon_pwm_fan_attributes,
+	.attrs = hwmon_pwm_fan_attrs,
 };
 static const struct attribute_group hwmon_in0_attrgroup = {
-	.attrs = hwmon_in0_attributes,
+	.attrs = hwmon_in0_attrs,
 };
 static const struct attribute_group hwmon_power_attrgroup = {
-	.attrs = hwmon_power_attributes,
+	.attrs = hwmon_power_attrs,
 };
 #endif
 
