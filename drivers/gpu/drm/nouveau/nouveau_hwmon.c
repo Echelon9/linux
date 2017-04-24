@@ -639,24 +639,129 @@ static struct attribute *hwmon_power_attrs[] = {
 	NULL
 };
 
+static umode_t nouveau_hwmon_temp_is_visible(struct kobject *kobj,
+	        struct attribute *attr, int index)
+{
+  struct device *d = container_of(kobj, struct device, kobj);
+	struct drm_device *dev = dev_get_drvdata(d);
+	struct nouveau_drm *drm = nouveau_drm(dev);
+	struct nvkm_therm *therm = nvxx_therm(&drm->device);
+	umode_t mode = 0;
+
+	if (therm && therm->attr_get && therm->attr_set) {
+		/* if the card has a working thermal sensor */
+		if (nvkm_therm_temp_get(therm) >= 0) {
+			mode = attr->mode;
+		}
+	}
+
+	return mode;
+}
+
+static umode_t nouveau_hwmon_fan_rpm_is_visible(struct kobject *kobj,
+	        struct attribute *attr, int index)
+{
+  struct device *d = container_of(kobj, struct device, kobj);
+	struct drm_device *dev = dev_get_drvdata(d);
+	struct nouveau_drm *drm = nouveau_drm(dev);
+	struct nvkm_therm *therm = nvxx_therm(&drm->device);
+	umode_t mode = 0;
+
+	/* if the card can read the fan rpm */
+	if (therm && nvkm_therm_fan_sense(therm) >= 0) {
+	  mode = attr->mode;
+  }
+
+	return mode;
+}
+
+static umode_t nouveau_hwmon_pwm_fan_is_visible(struct kobject *kobj,
+	        struct attribute *attr, int index)
+{
+  struct device *d = container_of(kobj, struct device, kobj);
+	struct drm_device *dev = dev_get_drvdata(d);
+	struct nouveau_drm *drm = nouveau_drm(dev);
+	struct nvkm_therm *therm = nvxx_therm(&drm->device);
+	umode_t mode = 0;
+
+	if (therm && therm->attr_get && therm->attr_set) {
+		/* if the card has a pwm fan */
+		/*XXX: incorrect, need better detection for this, some boards have
+		 *     the gpio entries for pwm fan control even when there's no
+		 *     actual fan connected to it... therm table? */
+		if (therm->fan_get && therm->fan_get(therm) >= 0) {
+			mode = attr->mode;
+		}
+	}
+
+	return mode;
+}
+
+static umode_t nouveau_hwmon_in0_is_visible(struct kobject *kobj,
+	        struct attribute *attr, int index)
+{
+  struct device *d = container_of(kobj, struct device, kobj);
+	struct drm_device *dev = dev_get_drvdata(d);
+	struct nouveau_drm *drm = nouveau_drm(dev);
+	struct nvkm_volt *volt = nvxx_volt(&drm->device);
+	umode_t mode = 0;
+
+	if (volt && nvkm_volt_get(volt) >= 0) {
+		mode = attr->mode;
+	}
+
+	return mode;
+}
+
+static umode_t nouveau_hwmon_power_is_visible(struct kobject *kobj,
+	        struct attribute *attr, int index)
+{
+  struct device *d = container_of(kobj, struct device, kobj);
+	struct drm_device *dev = dev_get_drvdata(d);
+	struct nouveau_drm *drm = nouveau_drm(dev);
+	struct nvkm_iccsense *iccsense = nvxx_iccsense(&drm->device);
+	umode_t mode = 0;
+
+	if (iccsense && iccsense->data_valid && !list_empty(&iccsense->rails)) {
+		mode = attr->mode;
+	}
+
+	return mode;
+}
+
 static const struct attribute_group hwmon_default_group = {
 	.attrs = hwmon_default_attrs,
 };
 static const struct attribute_group hwmon_temp_group = {
 	.attrs = hwmon_temp_attrs,
+	.is_visible = nouveau_hwmon_temp_is_visible,
 };
 static const struct attribute_group hwmon_fan_rpm_group = {
 	.attrs = hwmon_fan_rpm_attrs,
+	.is_visible = nouveau_hwmon_fan_rpm_is_visible,
 };
 static const struct attribute_group hwmon_pwm_fan_group = {
 	.attrs = hwmon_pwm_fan_attrs,
+	.is_visible = nouveau_hwmon_pwm_fan_is_visible,
 };
 static const struct attribute_group hwmon_in0_group = {
 	.attrs = hwmon_in0_attrs,
+	.is_visible = nouveau_hwmon_in0_is_visible,
 };
 static const struct attribute_group hwmon_power_group = {
 	.attrs = hwmon_power_attrs,
+	.is_visible = nouveau_hwmon_power_is_visible,
 };
+
+static const struct attribute_group *hwmon_groups[] = {
+  &hwmon_default_group,
+	&hwmon_temp_group,
+	&hwmon_fan_rpm_group,
+	&hwmon_pwm_fan_group,
+	&hwmon_in0_group,
+	&hwmon_power_group,
+	NULL,
+}
 #endif
 
 int
@@ -664,9 +769,6 @@ nouveau_hwmon_init(struct drm_device *dev)
 {
 #if defined(CONFIG_HWMON) || (defined(MODULE) && defined(CONFIG_HWMON_MODULE))
 	struct nouveau_drm *drm = nouveau_drm(dev);
-	struct nvkm_therm *therm = nvxx_therm(&drm->device);
-	struct nvkm_volt *volt = nvxx_volt(&drm->device);
-	struct nvkm_iccsense *iccsense = nvxx_iccsense(&drm->device);
 	struct nouveau_hwmon *hwmon;
 	struct device *hwmon_dev;
 	int ret = 0;
@@ -676,71 +778,18 @@ nouveau_hwmon_init(struct drm_device *dev)
 		return -ENOMEM;
 	hwmon->dev = dev;
 
-	hwmon_dev = hwmon_device_register(dev->dev);
+	hwmon_dev = hwmon_device_register_with_groups(drm->device, /* Check this */
+	                                              DRIVER_NAME, dev,
+	                                              hwmon_groups);
 	if (IS_ERR(hwmon_dev)) {
 		ret = PTR_ERR(hwmon_dev);
 		NV_ERROR(drm, "Unable to register hwmon device: %d\n", ret);
 		return ret;
 	}
-	dev_set_drvdata(hwmon_dev, dev);
-
-	/* set the default attributes */
-	ret = sysfs_create_group(&hwmon_dev->kobj, &hwmon_default_group);
-	if (ret)
-		goto error;
-
-	if (therm && therm->attr_get && therm->attr_set) {
-		/* if the card has a working thermal sensor */
-		if (nvkm_therm_temp_get(therm) >= 0) {
-			ret = sysfs_create_group(&hwmon_dev->kobj, &hwmon_temp_group);
-			if (ret)
-				goto error;
-		}
-
-		/* if the card has a pwm fan */
-		/*XXX: incorrect, need better detection for this, some boards have
-		 *     the gpio entries for pwm fan control even when there's no
-		 *     actual fan connected to it... therm table? */
-		if (therm->fan_get && therm->fan_get(therm) >= 0) {
-			ret = sysfs_create_group(&hwmon_dev->kobj,
-						 &hwmon_pwm_fan_group);
-			if (ret)
-				goto error;
-		}
-	}
-
-	/* if the card can read the fan rpm */
-	if (therm && nvkm_therm_fan_sense(therm) >= 0) {
-		ret = sysfs_create_group(&hwmon_dev->kobj,
-					 &hwmon_fan_rpm_group);
-		if (ret)
-			goto error;
-	}
-
-	if (volt && nvkm_volt_get(volt) >= 0) {
-		ret = sysfs_create_group(&hwmon_dev->kobj,
-					 &hwmon_in0_group);
-
-		if (ret)
-			goto error;
-	}
-
-	if (iccsense && iccsense->data_valid && !list_empty(&iccsense->rails)) {
-		ret = sysfs_create_group(&hwmon_dev->kobj,
-					 &hwmon_power_group);
-		if (ret)
-			goto error;
-	}
 
 	hwmon->hwmon = hwmon_dev;
 
 	return 0;
-
-error:
-	NV_ERROR(drm, "Unable to create some hwmon sysfs files: %d\n", ret);
-	hwmon_device_unregister(hwmon_dev);
-	hwmon->hwmon = NULL;
-	return ret;
 #else
 	return 0;
 #endif
@@ -752,16 +801,8 @@ nouveau_hwmon_fini(struct drm_device *dev)
 #if defined(CONFIG_HWMON) || (defined(MODULE) && defined(CONFIG_HWMON_MODULE))
 	struct nouveau_hwmon *hwmon = nouveau_hwmon(dev);
 
-	if (hwmon->hwmon) {
-		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_default_group);
-		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_temp_group);
-		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_pwm_fan_group);
-		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_fan_rpm_group);
-		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_in0_group);
-		sysfs_remove_group(&hwmon->hwmon->kobj, &hwmon_power_group);
-
+	if (hwmon->hwmon)
 		hwmon_device_unregister(hwmon->hwmon);
-	}
 
 	nouveau_drm(dev)->hwmon = NULL;
 	kfree(hwmon);
