@@ -574,6 +574,7 @@ nv50_gr_construct_mmio(struct nvkm_grctx *ctx)
 				gr_def(ctx, 0x407d08, 0x003d0040);
 			else
 				gr_def(ctx, 0x407d08, 0x003c0040);
+			// Handle NVKM_RAM_TYPE_GDDR5X ?
 		}
 		gr_def(ctx, 0x407d0c, 0x00000022);
 	}
